@@ -2,8 +2,7 @@
 #include "renderer/renderer.h"
 #include <iostream>
 
-int main(){
-	
+int main(){	
 	window window;
 	renderer renderer(window.getWindowHandle());	
 	try{	
