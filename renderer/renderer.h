@@ -1,6 +1,6 @@
 #include "window/window.h"
 #include <vulkan/vulkan.h>
-
+#include <vector>
 
 class renderer{
 private:
@@ -19,4 +19,6 @@ public:
 	void initializeSurface();
 	void initializeDevice();
 	void initializeCommandPool();
+
+	std::vector<const char*> getInstanceExtensions() const;
 };
