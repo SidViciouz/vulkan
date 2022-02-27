@@ -3,6 +3,7 @@
 #include <iostream>
 
 int main(){	
+
 	window window;
 	renderer renderer(window.getWindowHandle());	
 	try{	
