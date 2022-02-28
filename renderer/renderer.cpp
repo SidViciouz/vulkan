@@ -3,6 +3,7 @@
 #include <iostream>
 #include <vector>
 #include <cstring>
+#include <set>
 
 renderer::renderer(GLFWwindow* windowHandle){
 	initializeInstance();
@@ -61,9 +62,57 @@ void renderer::initializeSurface(GLFWwindow* windowHandle){
 		throw std::runtime_error("failed to create window surface.");
 }
 void renderer::initializeDevice(){
+	pickPhysicalDevice();
+	fillInQueueFamilyIndices();
+	std::set<uint32_t> QFS = {indices.graphicsFamilyIndex.value(),indices.presentationFamilyIndex.value()};
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
+	float priority = 1.0f;
+	for(auto QF : QFS){
+		VkDeviceQueueCreateInfo createInfo{};
+		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		createInfo.queueFamilyIndex = QF;
+		createInfo.queueCount = 1;
+		createInfo.pQueuePriorities = &priority;
+		queueCreateInfos.push_back(createInfo);
+	}
+
+	VkPhysicalDeviceFeatures features{};
+	//features.geometryShader = VK_TRUE;
+	features.tessellationShader = VK_TRUE;
+	features.fillModeNonSolid = VK_TRUE;
+	features.depthClamp = VK_TRUE;
+	features.imageCubeArray = VK_TRUE;
+	//features.shaderStorageImageMultisample = VK_TRUE;
+	features.shaderUniformBufferArrayDynamicIndexing = VK_TRUE;
+	features.samplerAnisotropy = VK_TRUE;
+	features.sampleRateShading = VK_TRUE;
+
+	VkDeviceCreateInfo deviceCreateInfo{};
+	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceCreateInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+	deviceCreateInfo.pEnabledFeatures = &features;
+	deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+	deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
+
+	if constexpr (validation::areEnabled()){
+		deviceCreateInfo.enabledLayerCount = static_cast<uint32_t>(validation::getValidationLayers().size());
+		deviceCreateInfo.ppEnabledLayerNames = validation::getValidationLayers().data();
+	}
+	else{
+		deviceCreateInfo.enabledLayerCount = 0;
+		deviceCreateInfo.ppEnabledLayerNames = nullptr;
+	}
+	if(vkCreateDevice(physicalDeviceHandle,&deviceCreateInfo,nullptr,&deviceHandle) != VK_SUCCESS)
+		throw std::runtime_error("failed to create logical device.");
+
+	vkGetDeviceQueue(deviceHandle,indices.graphicsFamilyIndex.value(),0,&graphicsQueueHandle);
+	vkGetDeviceQueue(deviceHandle,indices.presentationFamilyIndex.value(),0,&presentationQueueHandle);
 	
 }
 void renderer::initializeCommandPool(){
+	
 }
 
 //utils
@@ -104,3 +153,34 @@ std::vector<const char*> renderer::getInstanceExtensions() const{
 }
 
 
+void renderer::pickPhysicalDevice(){
+	uint32_t cnt = 0;
+	vkEnumeratePhysicalDevices(instanceHandle,&cnt,nullptr);
+	if(cnt == 0)
+		throw std::runtime_error("failed to find physcial device.");
+	std::vector<VkPhysicalDevice> physicalDevices(cnt);
+	vkEnumeratePhysicalDevices(instanceHandle,&cnt,physicalDevices.data());
+	//I got only one chip which is apple m1, so I'll just pick up this processor.
+	physicalDeviceHandle = physicalDevices[0];
+}
+void renderer::fillInQueueFamilyIndices(){
+	uint32_t cnt = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDeviceHandle,&cnt,nullptr);
+	std::vector<VkQueueFamilyProperties> queueFamilies(cnt);
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDeviceHandle,&cnt,queueFamilies.data());
+
+	int i = 0;
+	for(auto queueFamily : queueFamilies){
+		if(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			indices.graphicsFamilyIndex = i;
+		VkBool32 present = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDeviceHandle,i,surfaceHandle,&present);
+		if(present)
+			indices.presentationFamilyIndex = i;
+		if(indices.graphicsFamilyIndex.has_value() && indices.presentationFamilyIndex.has_value()){
+			return;
+		}
+		++i;
+	}
+	throw std::runtime_error("failed to fillInQueueFamilyIndices.");
+}

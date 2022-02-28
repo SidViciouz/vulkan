@@ -20,4 +20,4 @@ validation.o : validation/validation.cpp
 	$(CC) $(LIBS) $(INC) $(LIB_DIRS) -c validation/validation.cpp -o validation.o
 
 clean :
-	rm -rf *.0 vulkan
+	rm -rf *.o vulkan
