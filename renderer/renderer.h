@@ -21,6 +21,7 @@ private:
 	static constexpr std::array<const char*,1> deviceExtensions{
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
+	VkPipelineCache pipelineCacheHandle = VK_NULL_HANDLE;
 	
 public:
 	renderer(GLFWwindow* windowHandle);
