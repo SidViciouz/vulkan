@@ -18,9 +18,9 @@ renderer::~renderer(){
 }
 void renderer::initializeInstance(){
 	if constexpr (validation::areEnabled())
-		if(!validation::areSupported())
+		if(!validation::areSupported()){
 			throw std::runtime_error("Validation layers were requested, but are not available");
-		
+		}
 		
 	VkApplicationInfo appInfo{};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
