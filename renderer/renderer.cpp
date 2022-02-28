@@ -12,7 +12,7 @@ renderer::renderer(GLFWwindow* windowHandle){
 	}
 	initializeSurface(windowHandle);
 	initializeDevice();
-	initializeCommandPool();	
+	initializeCommandPool();
 }
 renderer::~renderer(){
 }
@@ -111,7 +111,13 @@ void renderer::initializeDevice(){
 	
 }
 void renderer::initializeCommandPool(){
+	VkCommandPoolCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	createInfo.queueFamilyIndex = indices.graphicsFamilyIndex.value();
+	createInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
 	
+	if(vkCreateCommandPool(deviceHandle,&createInfo,nullptr,&commandPoolHandle) != VK_SUCCESS)
+		throw std::runtime_error("fail to create commandPool.");	
 }
 
 //utils
