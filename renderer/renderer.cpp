@@ -9,7 +9,7 @@ renderer::renderer(GLFWwindow* windowHandle){
 	if constexpr (validation::areEnabled()){
 		validation::setUpDebugUtilsMessenger(instanceHandle);
 	}
-	initializeSurface();
+	initializeSurface(windowHandle);
 	initializeDevice();
 	initializeCommandPool();	
 }
@@ -56,10 +56,12 @@ void renderer::initializeInstance(){
 		throw std::runtime_error("failed to create instance.");
 	}
 }
-void renderer::initializeSurface(){
-	
+void renderer::initializeSurface(GLFWwindow* windowHandle){
+	if(glfwCreateWindowSurface(instanceHandle,windowHandle,nullptr,&surfaceHandle) != VK_SUCCESS)
+		throw std::runtime_error("failed to create window surface.");
 }
 void renderer::initializeDevice(){
+	
 }
 void renderer::initializeCommandPool(){
 }
