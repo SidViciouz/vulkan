@@ -10,6 +10,11 @@ public:
 		std::optional<uint32_t> graphicsFamilyIndex;
 		std::optional<uint32_t> presentationFamilyIndex;
 	};
+	struct surfaceProperties{
+		VkSurfaceCapabilitiesKHR surfaceCapabilities{};
+		std::vector<VkSurfaceFormatKHR> surfaceFormats;
+		std::vector<VkPresentModeKHR> presentationModes;
+	};
 private:
 	struct frameSynchronizationPrimitives{
 		VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
@@ -47,7 +52,8 @@ public:
 	std::vector<const char*> getInstanceExtensions() const;
 	void pickPhysicalDevice();
 	void fillInQueueFamilyIndices();
-
+	[[nodiscard]] surfaceProperties getSurfaceProperties() const;
+	
 	//presentation Objects
 	void initializeSwapchain();
 	void initializeRenderPass();

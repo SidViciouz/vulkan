@@ -196,6 +196,9 @@ void renderer::fillInQueueFamilyIndices(){
 	}
 	throw std::runtime_error("failed to fillInQueueFamilyIndices.");
 }
+[[nodiscard]] renderer::surfaceProperties renderer::getSurfaceProperties() const{
+	
+}
 void renderer::initializePipelineCache(){
 	VkPipelineCacheCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -234,6 +237,7 @@ void renderer::initializePresentationObjects(){
 	allocateCommandBuffers();	
 }
 void renderer::initializeSwapchain(){
+	
 }
 void renderer::initializeRenderPass(){
 }
