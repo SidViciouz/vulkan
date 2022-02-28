@@ -2,7 +2,6 @@
 
 window::window(){
 	glfwInit();
-
 	glfwWindowHint(GLFW_CLIENT_API,GLFW_NO_API);
 	windowHandle = glfwCreateWindow(640,480,"my universe",NULL,NULL);
 }
