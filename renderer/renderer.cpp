@@ -197,6 +197,24 @@ void renderer::fillInQueueFamilyIndices(){
 	throw std::runtime_error("failed to fillInQueueFamilyIndices.");
 }
 [[nodiscard]] renderer::surfaceProperties renderer::getSurfaceProperties() const{
+	surfaceProperties sp{};
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDeviceHandle,surfaceHandle,&sp.surfaceCapabilities);
+	
+	uint32_t cnt = 0;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDeviceHandle,surfaceHandle,&cnt,nullptr);
+	
+	if(cnt > 0){
+		sp.surfaceFormats.resize(cnt);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDeviceHandle,surfaceHandle,&cnt,sp.surfaceFormats.data());
+	}
+
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDeviceHandle,surfaceHandle,&cnt,nullptr);
+	if(cnt > 0){
+		sp.presentationModes.resize(cnt);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDeviceHandle,surfaceHandle,&cnt,sp.presentationModes.data());
+	}
+	
+	return sp;
 	
 }
 void renderer::initializePipelineCache(){
@@ -237,7 +255,7 @@ void renderer::initializePresentationObjects(){
 	allocateCommandBuffers();	
 }
 void renderer::initializeSwapchain(){
-	
+	const renderer::surfaceProperties sp = getSurfaceProperties();
 }
 void renderer::initializeRenderPass(){
 }
