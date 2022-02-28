@@ -11,6 +11,12 @@ public:
 		std::optional<uint32_t> presentationFamilyIndex;
 	};
 private:
+	struct frameSynchronizationPrimitives{
+		VkSemaphore imageAvailableSemaphore = VK_NULL_HANDLE;
+		VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
+		VkFence inFlightFence = VK_NULL_HANDLE;
+	};
+
 	VkInstance instanceHandle = VK_NULL_HANDLE;
 	VkSurfaceKHR surfaceHandle = VK_NULL_HANDLE;
 	VkPhysicalDevice physicalDeviceHandle = VK_NULL_HANDLE;
@@ -23,6 +29,8 @@ private:
 	};
 	VkPipelineCache pipelineCacheHandle = VK_NULL_HANDLE;
 	
+	std::vector<frameSynchronizationPrimitives> perFrameSynchronization;
+	
 public:
 	renderer(GLFWwindow* windowHandle);
 	~renderer();
@@ -30,10 +38,20 @@ public:
 	void initializeSurface(GLFWwindow* windowHandle);
 	void initializeDevice();
 	void initializeCommandPool();
+	void initializePipelineCache();	
+	void initializeSynchronizationPrimitives();
+	void initializePresentationObjects();
 
 	//utils
 	queueFamilyIndices indices{};
 	std::vector<const char*> getInstanceExtensions() const;
 	void pickPhysicalDevice();
 	void fillInQueueFamilyIndices();
+
+	//presentation Objects
+	void initializeSwapchain();
+	void initializeRenderPass();
+	void initializeFramebuffers();
+	void allocateCommandBuffers();
+
 };

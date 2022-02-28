@@ -4,8 +4,10 @@
 #include <vector>
 #include <cstring>
 #include <set>
+#include <functional>
 
 renderer::renderer(GLFWwindow* windowHandle){
+	//setting context part.
 	initializeInstance();
 	if constexpr (validation::areEnabled()){
 		validation::setUpDebugUtilsMessenger(instanceHandle);
@@ -13,6 +15,11 @@ renderer::renderer(GLFWwindow* windowHandle){
 	initializeSurface(windowHandle);
 	initializeDevice();
 	initializeCommandPool();
+
+	//presentation part.
+	initializePipelineCache();
+	initializeSynchronizationPrimitives();	
+	initializePresentationObjects();	
 }
 renderer::~renderer(){
 }
@@ -188,4 +195,49 @@ void renderer::fillInQueueFamilyIndices(){
 		++i;
 	}
 	throw std::runtime_error("failed to fillInQueueFamilyIndices.");
+}
+void renderer::initializePipelineCache(){
+	VkPipelineCacheCreateInfo createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+	createInfo.initialDataSize = 0;
+	createInfo.pInitialData = nullptr;
+	
+	if(vkCreatePipelineCache(deviceHandle,&createInfo,nullptr,&pipelineCacheHandle) != VK_SUCCESS)
+		throw std::runtime_error("failed to create pipeline cache.");
+}
+void renderer::initializeSynchronizationPrimitives(){
+	perFrameSynchronization.resize(2);
+	
+	VkSemaphoreCreateInfo semaphoreCreateInfo{};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
+	VkFenceCreateInfo fenceCreateInfo{};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+	for(auto& [imageAvailableSemaphore, renderFinishedSemaphore, inFlightFence] : perFrameSynchronization){
+		const std::array<std::reference_wrapper<VkSemaphore>,2> semaphores{std::ref(imageAvailableSemaphore),std::ref(renderFinishedSemaphore)};
+		
+		for(auto & semaphore : semaphores){
+			if(vkCreateSemaphore(deviceHandle,&semaphoreCreateInfo,nullptr,&semaphore.get()) != VK_SUCCESS)
+				throw std::runtime_error("failed to create semaphore.");
+		}
+		if(vkCreateFence(deviceHandle,&fenceCreateInfo,nullptr,&inFlightFence) != VK_SUCCESS)
+			throw std::runtime_error("failed to create fence.");
+	}
+}
+void renderer::initializePresentationObjects(){
+	initializeSwapchain();
+	initializeRenderPass();
+
+	initializeFramebuffers();
+	allocateCommandBuffers();	
+}
+void renderer::initializeSwapchain(){
+}
+void renderer::initializeRenderPass(){
+}
+void renderer::initializeFramebuffers(){
+}
+void renderer::allocateCommandBuffers(){
 }
