@@ -5,6 +5,7 @@
 #include <cstring>
 #include <set>
 #include <functional>
+#include "rendererUtility.h"
 
 renderer::renderer(GLFWwindow* windowHandle,const renderer::config& configHandle): wHandle{windowHandle} {
 	//setting context part.
@@ -340,6 +341,9 @@ void renderer::initializeSwapchain(){
 	
 	if(vkCreateSwapchainKHR(deviceHandle,&createInfo,nullptr,&swapchainHandle) != VK_SUCCESS)
 		throw std::runtime_error("failed to create swapchain.");
+
+	initializeSwapchainImages();
+	
 		
 }
 void renderer::initializeSwapchainImages(){
@@ -353,8 +357,10 @@ void renderer::initializeSwapchainImages(){
 		throw std::runtime_error("failed to get swapchain images.");
 	
 	swapchainImageViews.resize(cnt);
-	//for(size_t i=0; i<cnt; ++i)
-	//	swapchainImageViews[i] = 	
+	for(size_t i=0; i<cnt; ++i)
+		swapchainImageViews[i] = rendererUtility::createImageView(*this,swapchainImages[i],surfaceFormatHandle.format,VK_IMAGE_ASPECT_COLOR_BIT,1);
+	currentImagesInFlight.clear();
+	currentImagesInFlight.resize(swapchainImages.size(),VK_NULL_HANDLE);
 }
 void renderer::initializeRenderPass(){
 }

@@ -1,3 +1,4 @@
+#pragma once
 #include "window/window.h"
 #include <vulkan/vulkan.h>
 #include <vector>
@@ -42,12 +43,16 @@ private:
 	bool enableMultisampleHandle = true;
 	VkPipelineCache pipelineCacheHandle = VK_NULL_HANDLE;
 	std::vector<frameSynchronizationPrimitives> perFrameSynchronization;
+	std::vector<VkFence> currentImagesInFlight;
+	size_t currentFrameInFlight = 0;
+
 	VkSurfaceFormatKHR surfaceFormatHandle{};
 	VkPresentModeKHR presentationModeHandle = VK_PRESENT_MODE_FIFO_KHR;
 	VkExtent2D swapchainExtentHandle{};
 	VkSwapchainKHR swapchainHandle = VK_NULL_HANDLE;
 	std::vector<VkImage> swapchainImages;
 	std::vector<VkImageView> swapchainImageViews;	
+	
 public:
 	renderer(GLFWwindow* windowHandle,const renderer::config& configHandle);
 	~renderer();
@@ -68,6 +73,7 @@ public:
 	[[nodiscard]] VkSurfaceFormatKHR getBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats) const;
 	[[nodiscard]] VkPresentModeKHR getBestPresentationMode(const std::vector<VkPresentModeKHR>& availablePresentationModes) const;
 	[[nodiscard]] VkExtent2D getDrawableSurfaceExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const; 
+	inline VkDevice getDevice() const noexcept {return deviceHandle;}
 	
 	//presentation Objects
 	void initializeSwapchain();
