@@ -6,7 +6,7 @@
 #include <set>
 #include <functional>
 
-renderer::renderer(GLFWwindow* windowHandle){
+renderer::renderer(GLFWwindow* windowHandle,const renderer::config& configHandle): wHandle{windowHandle} {
 	//setting context part.
 	initializeInstance();
 	if constexpr (validation::areEnabled()){
@@ -17,6 +17,8 @@ renderer::renderer(GLFWwindow* windowHandle){
 	initializeCommandPool();
 
 	//presentation part.
+	enableVsyncHandle = configHandle.enableVsync;
+	enableMultisampleHandle = configHandle.enableMultisample;
 	initializePipelineCache();
 	initializeSynchronizationPrimitives();	
 	initializePresentationObjects();	
@@ -217,6 +219,49 @@ void renderer::fillInQueueFamilyIndices(){
 	return sp;
 	
 }
+[[nodiscard]] VkSurfaceFormatKHR renderer::getBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats) const{
+	for(const auto& availableSurfaceFormat : availableSurfaceFormats){
+		if(availableSurfaceFormat.format == VK_FORMAT_UNDEFINED)
+			return VkSurfaceFormatKHR{VK_FORMAT_B8G8R8A8_SRGB,VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+		else if(availableSurfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableSurfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			return availableSurfaceFormat;
+	}
+	return availableSurfaceFormats.front();	
+}
+[[nodiscard]] VkPresentModeKHR renderer::getBestPresentationMode(const std::vector<VkPresentModeKHR>& availablePresentationModes) const{
+	bool immediateMode = false;
+	
+	for(const auto availablePresentationMode : availablePresentationModes){
+		if(availablePresentationMode == VK_PRESENT_MODE_MAILBOX_KHR && enableVsyncHandle)
+			return availablePresentationMode;
+		else if(availablePresentationMode == VK_PRESENT_MODE_IMMEDIATE_KHR){
+			if(!enableVsyncHandle)
+				return availablePresentationMode;
+			immediateMode = true;
+		}
+	}	
+	if(!enableVsyncHandle && !immediateMode)
+		throw std::runtime_error("failed to get non-vsync vulkan presentation mode.");
+	
+	return immediateMode ? VK_PRESENT_MODE_IMMEDIATE_KHR : VK_PRESENT_MODE_FIFO_KHR;
+}
+[[nodiscard]] VkExtent2D renderer::getDrawableSurfaceExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const{
+	
+	if(surfaceCapabilities.currentExtent.width < std::numeric_limits<uint32_t>::max() ||
+		surfaceCapabilities.currentExtent.height < std::numeric_limits<uint32_t>::max())
+		return surfaceCapabilities.currentExtent;
+	else{
+		int width = 0;
+		int height = 0;
+		glfwGetFramebufferSize(wHandle,&width,&height);
+		glm::uvec2 drawableWindowSize = {static_cast<uint32_t>(width),static_cast<uint32_t>(height)};
+		
+		VkExtent2D actualExtent = {drawableWindowSize.x,drawableWindowSize.y};
+		actualExtent.width = std::clamp(actualExtent.width,surfaceCapabilities.minImageExtent.width,surfaceCapabilities.maxImageExtent.width);		
+		actualExtent.height = std::clamp(actualExtent.height,surfaceCapabilities.minImageExtent.height,surfaceCapabilities.maxImageExtent.height);
+		return actualExtent;		
+	}
+} 
 void renderer::initializePipelineCache(){
 	VkPipelineCacheCreateInfo createInfo{};
 	createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
@@ -256,6 +301,60 @@ void renderer::initializePresentationObjects(){
 }
 void renderer::initializeSwapchain(){
 	const renderer::surfaceProperties sp = getSurfaceProperties();
+	
+	surfaceFormatHandle = getBestSurfaceFormat(sp.surfaceFormats);
+	presentationModeHandle = getBestPresentationMode(sp.presentationModes);
+	swapchainExtentHandle = getDrawableSurfaceExtent(sp.surfaceCapabilities);
+
+	uint32_t minImageCount = sp.surfaceCapabilities.minImageCount + 1;
+	if(sp.surfaceCapabilities.maxImageCount > 0 && sp.surfaceCapabilities.maxImageCount < minImageCount)
+		minImageCount = sp.surfaceCapabilities.maxImageCount;
+	
+	VkSwapchainCreateInfoKHR createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.surface = surfaceHandle;
+	createInfo.minImageCount = minImageCount;
+	createInfo.imageFormat = surfaceFormatHandle.format;
+	createInfo.imageColorSpace = surfaceFormatHandle.colorSpace;
+	createInfo.imageExtent = swapchainExtentHandle;
+	createInfo.imageArrayLayers = 1;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	
+	const std::array<uint32_t,2> qfidc{indices.graphicsFamilyIndex.value(),indices.presentationFamilyIndex.value()};
+	
+	if(indices.graphicsFamilyIndex.value() == indices.presentationFamilyIndex.value()){
+		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = 0;
+		createInfo.pQueueFamilyIndices = nullptr;
+	}
+	else{
+		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		createInfo.queueFamilyIndexCount = 2;
+		createInfo.pQueueFamilyIndices = qfidc.data();
+	}
+	createInfo.preTransform = sp.surfaceCapabilities.currentTransform;
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	createInfo.presentMode = presentationModeHandle;
+	createInfo.clipped = VK_TRUE;
+	createInfo.oldSwapchain = VK_NULL_HANDLE;
+	
+	if(vkCreateSwapchainKHR(deviceHandle,&createInfo,nullptr,&swapchainHandle) != VK_SUCCESS)
+		throw std::runtime_error("failed to create swapchain.");
+		
+}
+void renderer::initializeSwapchainImages(){
+	uint32_t cnt = 0;
+	
+	if(vkGetSwapchainImagesKHR(deviceHandle,swapchainHandle,&cnt,nullptr) != VK_SUCCESS)
+		throw std::runtime_error("failed to get swapchain images count.");
+	
+	swapchainImages.resize(cnt);
+	if(vkGetSwapchainImagesKHR(deviceHandle,swapchainHandle,&cnt,swapchainImages.data()) != VK_SUCCESS)
+		throw std::runtime_error("failed to get swapchain images.");
+	
+	swapchainImageViews.resize(cnt);
+	//for(size_t i=0; i<cnt; ++i)
+	//	swapchainImageViews[i] = 	
 }
 void renderer::initializeRenderPass(){
 }

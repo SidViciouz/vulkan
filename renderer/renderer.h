@@ -6,6 +6,10 @@
 
 class renderer{
 public:
+	struct config{
+		bool enableVsync = true;
+		bool enableMultisample = true;
+	};
 	struct queueFamilyIndices{
 		std::optional<uint32_t> graphicsFamilyIndex;
 		std::optional<uint32_t> presentationFamilyIndex;
@@ -21,7 +25,8 @@ private:
 		VkSemaphore renderFinishedSemaphore = VK_NULL_HANDLE;
 		VkFence inFlightFence = VK_NULL_HANDLE;
 	};
-
+	
+	GLFWwindow* wHandle;
 	VkInstance instanceHandle = VK_NULL_HANDLE;
 	VkSurfaceKHR surfaceHandle = VK_NULL_HANDLE;
 	VkPhysicalDevice physicalDeviceHandle = VK_NULL_HANDLE;
@@ -32,12 +37,19 @@ private:
 	static constexpr std::array<const char*,1> deviceExtensions{
 		VK_KHR_SWAPCHAIN_EXTENSION_NAME
 	};
+
+	bool enableVsyncHandle = true;
+	bool enableMultisampleHandle = true;
 	VkPipelineCache pipelineCacheHandle = VK_NULL_HANDLE;
-	
 	std::vector<frameSynchronizationPrimitives> perFrameSynchronization;
-	
+	VkSurfaceFormatKHR surfaceFormatHandle{};
+	VkPresentModeKHR presentationModeHandle = VK_PRESENT_MODE_FIFO_KHR;
+	VkExtent2D swapchainExtentHandle{};
+	VkSwapchainKHR swapchainHandle = VK_NULL_HANDLE;
+	std::vector<VkImage> swapchainImages;
+	std::vector<VkImageView> swapchainImageViews;	
 public:
-	renderer(GLFWwindow* windowHandle);
+	renderer(GLFWwindow* windowHandle,const renderer::config& configHandle);
 	~renderer();
 	void initializeInstance();
 	void initializeSurface(GLFWwindow* windowHandle);
@@ -53,9 +65,13 @@ public:
 	void pickPhysicalDevice();
 	void fillInQueueFamilyIndices();
 	[[nodiscard]] surfaceProperties getSurfaceProperties() const;
+	[[nodiscard]] VkSurfaceFormatKHR getBestSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats) const;
+	[[nodiscard]] VkPresentModeKHR getBestPresentationMode(const std::vector<VkPresentModeKHR>& availablePresentationModes) const;
+	[[nodiscard]] VkExtent2D getDrawableSurfaceExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilities) const; 
 	
 	//presentation Objects
 	void initializeSwapchain();
+	void initializeSwapchainImages();
 	void initializeRenderPass();
 	void initializeFramebuffers();
 	void allocateCommandBuffers();

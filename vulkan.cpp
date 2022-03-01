@@ -5,7 +5,7 @@
 int main(){	
 
 	window window;
-	renderer renderer(window.getWindowHandle());	
+	renderer renderer(window.getWindowHandle(),renderer::config{true,true});	
 	try{	
 		window.loop();
 	}

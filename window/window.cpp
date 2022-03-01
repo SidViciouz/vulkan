@@ -19,3 +19,4 @@ void window::loop(){
 GLFWwindow* window::getWindowHandle(){
 	return this->windowHandle;
 }
+

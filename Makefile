@@ -4,8 +4,8 @@ LIB_DIRS = -L../moltan/macOS/lib -L/opt/homebrew/lib
 LIBS = -lglfw.3.3 -lvulkan.1
 SRCS = vulkan.cpp
 
-vulkan : vulkan.o window.o renderer.o validation.o
-	$(CC) $(LIBS) $(INC) $(LIB_DIRS) vulkan.o window.o renderer.o validation.o -o vulkan
+vulkan : vulkan.o window.o renderer.o validation.o rendererUtility.o
+	$(CC) $(LIBS) $(INC) $(LIB_DIRS) vulkan.o window.o renderer.o validation.o rendererUtility.o -o vulkan
 
 vulkan.o : vulkan.cpp
 	$(CC) $(LIBS) $(INC) $(LIB_DIRS) -c vulkan.cpp -o vulkan.o
@@ -18,6 +18,9 @@ renderer.o : renderer/renderer.cpp
 
 validation.o : validation/validation.cpp
 	$(CC) $(LIBS) $(INC) $(LIB_DIRS) -c validation/validation.cpp -o validation.o
+
+rendererUtility.o : renderer/rendererUtility.cpp
+	$(CC) $(LIBS) $(INC) $(LIBS_DIRS) -c renderer/rendererUtility.cpp -o rendererUtility.o
 
 clean :
 	rm -rf *.o vulkan
